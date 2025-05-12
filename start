@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klassrumsverktyg</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Ljusblågrå bakgrund */
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+        }
+        .btn {
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            border-radius: 0.375rem; /* rounded-md */
+            font-weight: 500; /* font-medium */
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #3b82f6; /* bg-blue-600 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb; /* hover:bg-blue-700 */
+        }
+        .btn-secondary {
+            background-color: #6b7280; /* bg-gray-500 */
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563; /* hover:bg-gray-600 */
+        }
+        .btn-danger {
+            background-color: #ef4444; /* bg-red-500 */
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626; /* hover:bg-red-600 */
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.5rem; /* p-2 */
+            border: 1px solid #d1d5db; /* border-gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            margin-bottom: 1rem; /* mb-4 */
+        }
+        .hand-raised-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem; /* p-3 */
+            border-bottom: 1px solid #e5e7eb; /* border-gray-200 */
+        }
+        .hand-raised-item:last-child {
+            border-bottom: none;
+        }
+        .message-box {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.375rem;
+            color: white;
+            text-align: center;
+        }
+        .message-box-info {
+            background-color: #3b82f6; /* bg-blue-500 */
+        }
+        .message-box-error {
+            background-color: #ef4444; /* bg-red-500 */
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="app-container" class="container">
+        <div id="initial-view">
+            <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">Välkommen till Klassrummet!</h1>
+            <p class="text-lg mb-8 text-center">Är du lärare eller elev?</p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="start-teacher-session-btn" class="btn btn-primary w-full sm:w-auto">Jag är lärare (Starta nytt klassrum)</button>
+            </div>
+            <p class="mt-6 text-sm text-gray-600 text-center">Elever ansluter via en länk som läraren delar.</p>
+        </div>
+
+        <div id="teacher-view" style="display:none;">
+            <h1 class="text-2xl font-bold mb-4 text-blue-700">Lärarvy</h1>
+            <div class="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-md">
+                <p class="text-sm font-medium text-blue-700">Dela denna länk med dina elever:</p>
+                <input type="text" id="student-join-url" readonly class="w-full p-2 mt-1 border border-blue-300 rounded-md bg-white cursor-pointer" onclick="this.select(); document.execCommand('copy'); showMessage('Länk kopierad till urklipp!', 'info');">
+                <p class="text-xs text-blue-600 mt-1">Klicka på länken för att kopiera den.</p>
+            </div>
+            <h2 class="text-xl font-semibold mb-3">Elever med uppräckta händer:</h2>
+            <ul id="raised-hands-list" class="bg-gray-50 border border-gray-200 rounded-md">
+                <li id="no-hands-raised" class="p-3 text-gray-500">Inga händer uppräckta ännu.</li>
+            </ul>
+            <button id="back-to-initial-teacher" class="btn btn-secondary mt-6 w-full">Tillbaka till startsidan</button>
+        </div>
+
+        <div id="student-login-view" style="display:none;">
+            <h1 class="text-2xl font-bold mb-4 text-green-700">Elevinloggning</h1>
+            <p class="mb-4">Ange ditt smeknamn och välj en fyrsiffrig PIN-kod för att ansluta till klassrummet <strong id="student-session-id-display" class="text-green-600"></strong>.</p>
+            <div id="student-login-error" class="message-box message-box-error" style="display:none;"></div>
+            <div>
+                <label for="nickname" class="block text-sm font-medium text-gray-700 mb-1">Smeknamn:</label>
+                <input type="text" id="nickname" class="input-field" placeholder="T.ex. Stjärnan Elev">
+            </div>
+            <div>
+                <label for="pin" class="block text-sm font-medium text-gray-700 mb-1">PIN (4 siffror):</label>
+                <input type="text" id="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" class="input-field" placeholder="T.ex. 1234">
+            </div>
+            <button id="student-login-btn" class="btn btn-primary w-full mt-2">Logga in</button>
+            <button id="back-to-initial-student-login" class="btn btn-secondary mt-4 w-full">Tillbaka till startsidan</button>
+        </div>
+
+        <div id="student-app-view" style="display:none;">
+            <h1 class="text-2xl font-bold mb-2 text-green-700">Välkommen, <span id="student-name-display"></span>!</h1>
+            <p class="mb-6">Du är ansluten till klassrummet <strong id="student-app-session-id-display" class="text-green-600"></strong>.</p>
+            <button id="hand-raise-button" class="btn btn-primary w-full text-lg">Räck upp handen</button>
+            <button id="student-logout-btn" class="btn btn-secondary mt-4 w-full">Logga ut och återgå till startsidan</button>
+        </div>
+
+        <div id="message-area" class="message-box" style="display:none; margin-top: 1rem;"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // All kod som tidigare var direkt i <script> är nu här inne
+            console.log("DOM fullständigt laddat och parsat.");
+
+            // DOM Elements
+            const initialView = document.getElementById('initial-view');
+            const teacherView = document.getElementById('teacher-view');
+            const studentLoginView = document.getElementById('student-login-view');
+            const studentAppView = document.getElementById('student-app-view');
+
+            const startTeacherSessionBtn = document.getElementById('start-teacher-session-btn');
+            const studentJoinUrlInput = document.getElementById('student-join-url');
+            const raisedHandsList = document.getElementById('raised-hands-list');
+
+            const studentLoginBtn = document.getElementById('student-login-btn');
+            const nicknameInput = document.getElementById('nickname');
+            const pinInput = document.getElementById('pin');
+            const studentLoginError = document.getElementById('student-login-error');
+            const studentSessionIdDisplay = document.getElementById('student-session-id-display');
+
+            const studentNameDisplay = document.getElementById('student-name-display');
+            const studentAppSessionIdDisplay = document.getElementById('student-app-session-id-display');
+            const handRaiseButton = document.getElementById('hand-raise-button');
+            const studentLogoutBtn = document.getElementById('student-logout-btn');
+
+            const backToInitialTeacherBtn = document.getElementById('back-to-initial-teacher');
+            const backToInitialStudentLoginBtn = document.getElementById('back-to-initial-student-login');
+
+            const messageArea = document.getElementById('message-area');
+
+            // App state
+            let currentSessionId = null;
+            let currentUser = null; 
+
+            const LS_HANDS_PREFIX = 'classroom_hands_';
+            const SS_USER_KEY = 'classroom_currentUser';
+
+            // Utility Functions
+            function generateSessionId() {
+                return Math.random().toString(36).substr(2, 6).toUpperCase();
+            }
+
+            function showView(viewToShowId) {
+                console.log("Försöker visa vy:", viewToShowId);
+                const views = ['initial-view', 'teacher-view', 'student-login-view', 'student-app-view'];
+                let foundTargetView = false;
+                views.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.display = (id === viewToShowId) ? 'block' : 'none';
+                        if (id === viewToShowId) foundTargetView = true;
+                    } else {
+                        console.error('ShowView: HTML-element saknas för id:', id);
+                    }
+                });
+
+                if (!foundTargetView && viewToShowId) {
+                     console.error('ShowView: Målvy', viewToShowId, 'kunde inte hittas eller visas korrekt.');
+                }
+
+                // NY LOGG: Kontrollera den faktiska display-stilen för målvyn
+                const targetEl = document.getElementById(viewToShowId);
+                if (targetEl) {
+                    console.log(`Status för ${viewToShowId} efter försök att visa: display = ${window.getComputedStyle(targetEl).display}`);
+                } else if (viewToShowId) {
+                    console.error(`Målvy-element ${viewToShowId} (för statuskontroll) hittades inte alls.`);
+                }
+            }
+
+            function showMessage(text, type = 'info', duration = 3000) {
+                if (!messageArea) {
+                    console.error("Message area element är inte tillgängligt för att visa meddelande:", text);
+                    return;
+                }
+                messageArea.textContent = text;
+                messageArea.className = `message-box message-box-${type}`;
+                messageArea.style.display = 'block';
+                setTimeout(() => {
+                    messageArea.style.display = 'none';
+                }, duration);
+            }
+            
+            function getRaisedHands(sessionId) {
+                if (!sessionId) return [];
+                try {
+                    return JSON.parse(localStorage.getItem(LS_HANDS_PREFIX + sessionId)) || [];
+                } catch (e) {
+                    console.error("Fel vid parsning av raisedHands från localStorage:", e);
+                    return [];
+                }
+            }
+
+            function saveRaisedHands(sessionId, hands) {
+                if (!sessionId) return;
+                try {
+                    localStorage.setItem(LS_HANDS_PREFIX + sessionId, JSON.stringify(hands));
+                    window.dispatchEvent(new CustomEvent('localStorageUpdated', { detail: { key: LS_HANDS_PREFIX + sessionId } }));
+                } catch (e) {
+                    console.error("Fel vid sparning av raisedHands till localStorage:", e);
+                }
+            }
+
+            // Teacher Logic
+            function startTeacherSession() {
+                console.log("Startar lärarsession...");
+                currentSessionId = generateSessionId();
+                history.pushState({ role: 'teacher', sessionId: currentSessionId }, '', `#teacher/${currentSessionId}`);
+                renderTeacherView();
+            }
+
+            function renderTeacherView() {
+                if (!currentSessionId) {
+                    console.error("RenderTeacherView: currentSessionId saknas.");
+                    showView('initial-view');
+                    return;
+                }
+                console.log("Renderar lärarvy för session:", currentSessionId);
+                showView('teacher-view');
+                const joinUrl = `${window.location.origin}${window.location.pathname}#student/${currentSessionId}`;
+                if (studentJoinUrlInput) {
+                    studentJoinUrlInput.value = joinUrl;
+                } else {
+                    console.error("RenderTeacherView: studentJoinUrlInput element saknas.");
+                }
+                updateRaisedHandsList();
+            }
+
+            function updateRaisedHandsList() {
+                if (!currentSessionId || !raisedHandsList) {
+                    console.warn("UpdateRaisedHandsList: currentSessionId eller raisedHandsList element saknas.");
+                    if (raisedHandsList && !raisedHandsList.querySelector('li')) { 
+                        const li = document.createElement('li');
+                        li.textContent = 'Inga händer uppräckta ännu.';
+                        li.className = 'p-3 text-gray-500';
+                        li.id = 'no-hands-raised'; 
+                        raisedHandsList.innerHTML = ''; 
+                        raisedHandsList.appendChild(li);
+                    }
+                    return;
+                }
+                const hands = getRaisedHands(currentSessionId);
+                raisedHandsList.innerHTML = ''; 
+
+                if (hands.length === 0) {
+                    const li = document.createElement('li');
+                    li.textContent = 'Inga händer uppräckta ännu.';
+                    li.className = 'p-3 text-gray-500';
+                    li.id = 'no-hands-raised';
+                    raisedHandsList.appendChild(li);
+                } else {
+                    hands.sort((a, b) => a.timestamp - b.timestamp);
+                    hands.forEach(hand => {
+                        const li = document.createElement('li');
+                        li.className = 'hand-raised-item group';
+                        
+                        const nameSpan = document.createElement('span');
+                        nameSpan.textContent = hand.nickname;
+                        nameSpan.className = 'font-medium';
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.textContent = 'Ta bort';
+                        removeBtn.className = 'btn btn-danger btn-sm py-1 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity';
+                        removeBtn.onclick = () => removeStudentHand(hand.nickname);
+                        
+                        li.appendChild(nameSpan);
+                        li.appendChild(removeBtn);
+                        raisedHandsList.appendChild(li);
+                    });
+                }
+            }
+
+            function removeStudentHand(nickname) {
+                if (!currentSessionId) return;
+                let hands = getRaisedHands(currentSessionId);
+                hands = hands.filter(h => h.nickname !== nickname);
+                saveRaisedHands(currentSessionId, hands);
+            }
+
+            // Student Login Logic
+            function setupStudentLogin(sessionId) {
+                console.log("Förbereder elevinloggning för session:", sessionId);
+                if (!sessionId) {
+                    console.error("SetupStudentLogin: sessionId saknas.");
+                    showView('initial-view'); 
+                    return;
+                }
+                currentSessionId = sessionId;
+                if (studentSessionIdDisplay) studentSessionIdDisplay.textContent = `(Session: ${sessionId})`;
+                else console.error("SetupStudentLogin: studentSessionIdDisplay element saknas.");
+                if (studentLoginError) studentLoginError.style.display = 'none';
+                else console.error("SetupStudentLogin: studentLoginError element saknas.");
+                if (nicknameInput) nicknameInput.value = '';
+                else console.error("SetupStudentLogin: nicknameInput element saknas.");
+                if (pinInput) pinInput.value = '';
+                else console.error("SetupStudentLogin: pinInput element saknas.");
+                showView('student-login-view');
+            }
+
+            function handleStudentLogin() {
+                const nickname = nicknameInput ? nicknameInput.value.trim() : '';
+                const pin = pinInput ? pinInput.value : '';
+
+                if (!nickname) {
+                    if (studentLoginError) {
+                        studentLoginError.textContent = 'Smeknamn får inte vara tomt.';
+                        studentLoginError.style.display = 'block';
+                    }
+                    return;
+                }
+                if (!/^\d{4}$/.test(pin)) {
+                     if (studentLoginError) {
+                        studentLoginError.textContent = 'PIN-kod måste vara 4 siffror.';
+                        studentLoginError.style.display = 'block';
+                    }
+                    return;
+                }
+                console.log("Elev loggar in:", nickname, "Session:", currentSessionId);
+                currentUser = { nickname, pin, sessionId: currentSessionId }; 
+                try {
+                    sessionStorage.setItem(SS_USER_KEY, JSON.stringify(currentUser));
+                } catch (e) {
+                    console.error("Fel vid sparning av currentUser till sessionStorage:", e);
+                    showMessage("Kunde inte spara session. Prova att aktivera cookies/webbplatsdata.", "error");
+                    return;
+                }
+                history.pushState({ role: 'student', sessionId: currentSessionId, loggedIn: true }, '', `#student/${currentSessionId}/app`);
+                renderStudentAppView();
+            }
+
+            // Student App Logic
+            function renderStudentAppView() {
+                if (!currentUser || !currentUser.sessionId) {
+                    console.warn("RenderStudentAppView: currentUser eller currentUser.sessionId saknas. Försöker återställa...");
+                    parseUrl(); 
+                    return;
+                }
+                currentSessionId = currentUser.sessionId; 
+                console.log("Renderar elevappvy för:", currentUser.nickname, "Session:", currentSessionId);
+                if (studentNameDisplay) studentNameDisplay.textContent = currentUser.nickname;
+                else console.error("RenderStudentAppView: studentNameDisplay element saknas.");
+                if (studentAppSessionIdDisplay) studentAppSessionIdDisplay.textContent = `(Session: ${currentUser.sessionId})`;
+                else console.error("RenderStudentAppView: studentAppSessionIdDisplay element saknas.");
+                updateHandRaiseButtonState();
+                showView('student-app-view');
+            }
+
+            function toggleHandRaise() {
+                if (!currentUser || !currentSessionId) return;
+                console.log("Växlar handuppräckning för:", currentUser.nickname);
+
+                let hands = getRaisedHands(currentSessionId);
+                const studentHandIndex = hands.findIndex(h => h.nickname === currentUser.nickname);
+
+                if (studentHandIndex > -1) {
+                    hands.splice(studentHandIndex, 1);
+                } else {
+                    hands.push({ nickname: currentUser.nickname, timestamp: Date.now() });
+                }
+                saveRaisedHands(currentSessionId, hands);
+            }
+
+            function updateHandRaiseButtonState() {
+                if (!currentUser || !currentSessionId || !handRaiseButton || (studentAppView && studentAppView.style.display === 'none')) {
+                    return; 
+                }
+                const hands = getRaisedHands(currentSessionId);
+                const isHandRaised = hands.some(h => h.nickname === currentUser.nickname);
+
+                if (isHandRaised) {
+                    handRaiseButton.textContent = 'Ta ner handen';
+                    handRaiseButton.classList.remove('btn-primary');
+                    handRaiseButton.classList.add('btn-secondary');
+                } else {
+                    handRaiseButton.textContent = 'Räck upp handen';
+                    handRaiseButton.classList.remove('btn-secondary');
+                    handRaiseButton.classList.add('btn-primary');
+                }
+            }
+            
+            function studentLogout() {
+                console.log("Elev loggar ut:", currentUser ? currentUser.nickname : "Okänd");
+                if (currentUser && currentSessionId) {
+                    let hands = getRaisedHands(currentSessionId);
+                    const studentHandIndex = hands.findIndex(h => h.nickname === currentUser.nickname);
+                    if (studentHandIndex > -1) {
+                        hands.splice(studentHandIndex, 1);
+                        saveRaisedHands(currentSessionId, hands);
+                    }
+                }
+
+                currentUser = null;
+                try {
+                    sessionStorage.removeItem(SS_USER_KEY);
+                } catch (e) {
+                    console.error("Fel vid borttagning av currentUser från sessionStorage:", e);
+                }
+                history.pushState({ role: null }, '', window.location.pathname); 
+                showView('initial-view');
+            }
+
+            // Routing and Initialization
+            function parseUrl() {
+                const hash = window.location.hash;
+                console.log("ParseUrl anropad. Hash:", hash);
+                let storedUser = null;
+                try {
+                    const userData = sessionStorage.getItem(SS_USER_KEY);
+                    if (userData) {
+                        storedUser = JSON.parse(userData);
+                    }
+                } catch (e) {
+                    console.error("Fel vid parsning av storedUser från sessionStorage:", e);
+                    sessionStorage.removeItem(SS_USER_KEY); 
+                }
+
+                if (hash.startsWith('#teacher/')) {
+                    const sessionIdFromUrl = hash.split('/')[1];
+                    if (sessionIdFromUrl) {
+                        currentSessionId = sessionIdFromUrl;
+                        renderTeacherView();
+                    } else {
+                        console.warn("ParseUrl: Lärar-URL saknar session ID.");
+                        showView('initial-view');
+                    }
+                } else if (hash.startsWith('#student/')) {
+                    const parts = hash.split('/');
+                    const sessionIdFromUrl = parts[1];
+                    const appMarker = parts[2];
+
+                    if (!sessionIdFromUrl) {
+                        console.warn("ParseUrl: Elev-URL saknar session ID.");
+                        showView('initial-view');
+                        return;
+                    }
+                    
+                    currentSessionId = sessionIdFromUrl; 
+
+                    if (storedUser && storedUser.sessionId === sessionIdFromUrl && appMarker === 'app') {
+                        console.log("ParseUrl: Återställer elevsession från sessionStorage.");
+                        currentUser = storedUser;
+                        renderStudentAppView();
+                    } else {
+                        console.log("ParseUrl: Visar elevinloggning för session:", sessionIdFromUrl);
+                        if (currentUser && currentUser.sessionId !== sessionIdFromUrl) {
+                            currentUser = null; 
+                            sessionStorage.removeItem(SS_USER_KEY);
+                        }
+                        setupStudentLogin(sessionIdFromUrl);
+                    }
+                } else {
+                    console.log("ParseUrl: Ingen specifik hash eller okänd hash, visar initialvy.");
+                    showView('initial-view');
+                }
+            }
+
+            // Event Listeners
+            if (startTeacherSessionBtn) startTeacherSessionBtn.addEventListener('click', startTeacherSession);
+            else console.error("startTeacherSessionBtn element saknas");
+
+            if (studentLoginBtn) studentLoginBtn.addEventListener('click', handleStudentLogin);
+            else console.error("studentLoginBtn element saknas");
+            
+            if (handRaiseButton) handRaiseButton.addEventListener('click', toggleHandRaise);
+            else console.error("handRaiseButton element saknas");
+
+            if (studentLogoutBtn) studentLogoutBtn.addEventListener('click', studentLogout);
+            else console.error("studentLogoutBtn element saknas");
+
+
+            if (backToInitialTeacherBtn) {
+                backToInitialTeacherBtn.addEventListener('click', () => {
+                    history.pushState({ role: null }, '', window.location.pathname);
+                    showView('initial-view');
+                });
+            } else console.error("backToInitialTeacherBtn element saknas");
+
+            if (backToInitialStudentLoginBtn) {
+                backToInitialStudentLoginBtn.addEventListener('click', () => {
+                    history.pushState({ role: null }, '', window.location.pathname);
+                    showView('initial-view');
+                });
+            } else console.error("backToInitialStudentLoginBtn element saknas");
+
+            window.addEventListener('hashchange', parseUrl);
+            
+            window.addEventListener('storage', (event) => {
+                if (event.key && event.key.startsWith(LS_HANDS_PREFIX)) {
+                    const changedSessionId = event.key.substring(LS_HANDS_PREFIX.length);
+                    if (changedSessionId === currentSessionId) {
+                        console.log("Storage event (localStorage): Uppdaterar vyer för session", changedSessionId);
+                        if (teacherView && teacherView.style.display === 'block') {
+                            updateRaisedHandsList();
+                        }
+                        if (studentAppView && studentAppView.style.display === 'block' && currentUser) {
+                            updateHandRaiseButtonState();
+                        }
+                    }
+                }
+                if (event.key === SS_USER_KEY) { 
+                    console.log("Storage event (sessionStorage): Användardata ändrad, parsar URL på nytt.");
+                    parseUrl(); 
+                }
+            });
+            
+            window.addEventListener('localStorageUpdated', (event) => {
+                if (event.detail && event.detail.key && event.detail.key.startsWith(LS_HANDS_PREFIX)) {
+                    const changedSessionId = event.detail.key.substring(LS_HANDS_PREFIX.length);
+                    if (changedSessionId === currentSessionId) {
+                        console.log("localStorageUpdated custom event: Uppdaterar vyer för session", changedSessionId);
+                         if (teacherView && teacherView.style.display === 'block') {
+                            updateRaisedHandsList();
+                        }
+                        if (studentAppView && studentAppView.style.display === 'block' && currentUser) {
+                            updateHandRaiseButtonState();
+                        }
+                    }
+                }
+            });
+
+            // Initial load
+            console.log("Initial sidladdning, anropar parseUrl.");
+            parseUrl(); 
+
+        }); // Slut på DOMContentLoaded
+    </script>
+</body>
+</html>
